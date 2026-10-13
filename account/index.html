@@ -76,6 +76,15 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
   $('account-instructions').textContent='Your personal study notes remain private. Admin can view completion totals only.';
   var roleResult=await api.from('study_user_profiles').select('role').eq('user_id',user.id).maybeSingle();
   $('admin-link').classList.toggle('hidden',!!roleResult.error||!roleResult.data||roleResult.data.role!=='admin');
+  if(roleResult.error){msg('Unable to verify your enrollment: '+roleResult.error.message);return;}
+  if(!roleResult.data){
+    $('account-instructions').textContent='This email address is not enrolled in the study program. Please use the approved Kathy, CJ, or Admin account.';
+    $('admin-link').classList.add('hidden');
+    $('total').textContent='—';
+    $('progress-message').textContent='Access is limited to the three authorized accounts.';
+    cards({});
+    return;
+  }
   var q=await api.from('study_day_progress').select('study_id,day_number,is_completed').eq('user_id',user.id);
   if(q.error){msg('Unable to load progress: '+q.error.message);return;}
   var seen={};
