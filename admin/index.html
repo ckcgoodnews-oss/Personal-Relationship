@@ -4,6 +4,21 @@
 <body><header><div><a href="../hub/">← All Bible studies</a><h1>Administrator Dashboard</h1><p>View each participant's study completion status. Journal entries, personal reflections, and scenario responses are not accessible through this dashboard.</p></div></header>
 <main><section class="panel"><div class="row"><div><h2>Secure admin access</h2><p id="identity" class="muted">Checking your sign-in and role…</p></div><a class="button" href="../account/">Manage sign-in</a></div><p role="status" id="message" class="muted"></p></section>
 <section class="panel hidden" id="summary"><div class="row"><h2>Participants' progress</h2><span class="badge" id="overall">—</span></div><p class="muted">Completed lesson counts are read through a restricted database function. No journals or note content are transmitted.</p><div id="people"></div><div class="row" style="margin-top:20px"><button class="button" style="border:0;cursor:pointer" type="button" id="refresh">Refresh progress</button><span class="muted" id="updated"></span></div></section>
+<section class="panel hidden" id="management"><div class="row"><h2>Manage student accounts</h2><button type="button" id="roster-refresh" class="button" style="border:0;cursor:pointer">Refresh accounts</button></div>
+<p class="muted">Only the verified Admin can create new student accounts or reset students' passwords. Existing passwords are never displayed. A new temporary password is shown once, and must be changed at first login. Temporary passwords must be shared privately.</p>
+<form id="student-create" style="display:flex;flex-wrap:wrap;gap:10px;align-items:end">
+<label>Student name<input id="student-name" type="text" maxlength="80" placeholder="Name" autocomplete="off" required style="display:block;padding:10px;border:1px solid #bcd7c5;border-radius:8px"></label>
+<label>Email<input id="student-email" type="email" placeholder="student@example.com" autocomplete="off" required style="display:block;padding:10px;border:1px solid #bcd7c5;border-radius:8px"></label>
+<button class="button" type="submit" style="border:0;cursor:pointer">Create student</button>
+</form>
+<p class="muted" id="management-message" role="status"></p>
+<div id="one-time-password" class="hidden" style="background:#edf8ef;border:1px solid #b4d5bb;border-radius:12px;padding:14px">
+<strong>Temporary password — displayed only until you leave or refresh this page</strong>
+<p class="muted">Give it to the correct person through a private channel, not in public GitHub comments or screenshots. Their first sign-in requires a new password.</p>
+<div class="row"><code id="temp-value" style="font-size:1rem;word-break:break-all"></code><button type="button" id="copy-temp" class="button" style="border:0;cursor:pointer">Copy password</button></div>
+<p class="muted" id="temp-recipient"></p></div>
+<div id="roster" aria-live="polite"></div>
+</section>
 </main><script src="../shared/config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="../shared/study-cloud.js"></script>
 <script>
 (async function(){
@@ -30,6 +45,63 @@
    document.getElementById('updated').textContent='Updated '+new Date().toLocaleTimeString();
    summary.classList.remove('hidden');msg.className='muted';msg.textContent='Only completion summaries are available here.';
  }
+ var accountStatus=document.getElementById('management-message'),passwordPanel=document.getElementById('one-time-password'),tempValue=document.getElementById('temp-value'),tempRecipient=document.getElementById('temp-recipient');
+ async function manage(action,payload){
+   var r=await api.functions.invoke('study-accounts',{body:Object.assign({action:action},payload||{})});
+   if(r.error||!r.data||r.data.error)throw Error(r.data&&r.data.error||r.error&&r.error.message||'Account service unavailable');
+   return r.data;
+ }
+ function displayTemporaryPassword(email,password){
+   tempValue.textContent=password;tempRecipient.textContent='For '+email;passwordPanel.classList.remove('hidden');
+ }
+ async function loadRoster(){
+   accountStatus.textContent='Loading authorized accounts…';
+   try{
+      var r=await manage('roster');var users=r.users||[];
+      var roster=document.getElementById('roster');roster.innerHTML='';
+      users.forEach(function(u){
+         var card=document.createElement('div');card.className='person';
+         var title=document.createElement('div');title.className='row';
+         var name=document.createElement('strong');name.textContent=u.display_name+' · '+u.account_role;
+         var note=document.createElement('span');note.className='muted';note.textContent=(u.account_exists?'Active account':'Not yet created')+(u.password_setup_required?' · Password change required':'');
+         title.appendChild(name);title.appendChild(note);card.appendChild(title);
+         var email=document.createElement('div');email.className='muted';email.textContent=u.email;card.appendChild(email);
+         if(u.account_role==='student'&&u.account_exists){
+            var reset=document.createElement('button');reset.type='button';reset.className='button';reset.style.cssText='border:0;cursor:pointer;margin-top:10px';
+            reset.textContent='Issue temporary password';reset.addEventListener('click',async function(){
+              if(!confirm('Reset password for '+u.display_name+'? Their previous password will stop working.'))return;
+              reset.disabled=true;accountStatus.textContent='Resetting password…';
+              try{
+                 var done=await manage('reset',{email:u.email});
+                 displayTemporaryPassword(u.email,done.temporary_password);
+                 accountStatus.textContent='Temporary password issued. Share it privately with '+u.display_name+'.';
+                 await loadRoster();
+              }catch(err){accountStatus.textContent='Unable to reset password: '+err.message;}
+              finally{reset.disabled=false;}
+            });card.appendChild(reset);
+         }
+         roster.appendChild(card);
+      });
+      accountStatus.textContent='Only student passwords can be reset here. Admin can change their own password from My Study Dashboard.';
+   }catch(err){accountStatus.textContent='Unable to load accounts: '+err.message;}
+ }
+ document.getElementById('roster-refresh').addEventListener('click',loadRoster);
+ document.getElementById('student-create').addEventListener('submit',async function(e){
+   e.preventDefault();
+   var name=document.getElementById('student-name').value.trim(),email=document.getElementById('student-email').value.trim();
+   var btn=this.querySelector('[type=submit]');btn.disabled=true;accountStatus.textContent='Creating account without email…';
+   try{
+      var r=await manage('create',{name:name,email:email});
+      displayTemporaryPassword(r.email,r.temporary_password);
+      accountStatus.textContent='Account created. Give the temporary password privately to '+name+'.';
+      this.reset();await loadRoster();
+   }catch(err){accountStatus.textContent='Unable to create account: '+err.message;}
+   finally{btn.disabled=false;}
+ });
+ document.getElementById('copy-temp').addEventListener('click',async function(){
+   try{await navigator.clipboard.writeText(tempValue.textContent);accountStatus.textContent='Password copied. Share privately, then clear your clipboard.';}
+   catch(err){accountStatus.textContent='Cannot copy automatically. Select and copy the password manually.';}
+ });
  try{
    api=cloud.api();
    var auth=await api.auth.getUser();var user=auth.data&&auth.data.user;
@@ -39,7 +111,8 @@
    if(r.error)throw r.error;
    if(!r.data||r.data.role!=='admin'){msg.textContent='This account is not designated as Admin. Use the approved administrator email to sign in; its role is assigned automatically at first sign-in.';return;}
    document.getElementById('refresh').addEventListener('click',refresh);
-   await refresh();
+   document.getElementById('management').classList.remove('hidden');
+   await Promise.all([refresh(), loadRoster()]);
  }catch(e){msg.className='error';msg.textContent='Administrator dashboard unavailable: '+e.message}
 })();
 </script></body></html>
