@@ -375,7 +375,8 @@ footer{max-width:1100px;margin:auto;padding:20px;color:var(--muted);font-size:.8
     <p>Personal Bible Study Training Tool • NWT references only • Your journal is stored locally on this device.</p>
   </footer>
 
-  <script>const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+  <script src="../shared/auxiliary-qa.js"></script>
+<script>const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const store=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const load=(k,d=null)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
 
@@ -578,6 +579,16 @@ $('#chatNew').onclick=()=>{coachHistory=[];$('#chatTranscript').replaceChildren(
       status.textContent='Your completion status is private to you. '+Object.values(done).filter(Boolean).length+' / '+count+' completed.';paint(done);
     }catch(e){fail('Progress tracking is unavailable: '+e.message);}
   })();
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  const guides=document.querySelectorAll('#guides > details.card');
+  guides.forEach((node,i)=>{
+    const area=node.querySelector('.detail-body');
+    if(area&&window.StudyAuxiliary)area.insertAdjacentHTML('beforeend',window.StudyAuxiliary.render('guide',i+1));
+  });
 })();
 </script>
 </body>
