@@ -78,7 +78,7 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
    localStorage.removeItem('personal-study-auth-user-v1');
    $('password-signin').classList.remove('hidden');$('sign-in').classList.add('hidden');$('signin-options').classList.remove('hidden');$('signed-in').classList.add('hidden');$('password-section').classList.add('hidden');$('change-own-password').classList.add('hidden');
    $('account-instructions').textContent='Use your assigned email address and password. If you have no password yet, sign in once with an email link, or ask Admin to create/reset your account.';$('admin-link').classList.add('hidden');
-   $('total').textContent='— / 56';$('progress-message').textContent='Sign in to see your private progress.';cards({});
+   $('total').textContent='— / 64';$('progress-message').textContent='Sign in to see your private progress.';cards({});
    return;
   }
   localStorage.setItem('personal-study-auth-user-v1',user.id);
@@ -189,7 +189,7 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
   refreshOtpButton();
   msg('Requesting one secure sign-in link… Please do not keep pressing the button.');
   try{
-    var r=await api.auth.signInWithOtp({email:email,options:{emailRedirectTo:new URL('account/',cloud.root).href,shouldCreateUser:true}});
+    var r=await api.auth.signInWithOtp({email:email,options:{emailRedirectTo:new URL('account/',cloud.root).href,shouldCreateUser:false}});
     if(r.error){
       var rateLimited=r.error.status===429||/email rate limit|over_email_send_rate_limit/i.test(r.error.message||'');
       msg(rateLimited
