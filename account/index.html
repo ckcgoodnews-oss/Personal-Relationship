@@ -74,9 +74,10 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
   $('signed-email').textContent=user.email||'Signed in';
   $('signed-in').classList.remove('hidden');$('sign-in').classList.add('hidden');
   $('account-instructions').textContent='Your personal study notes remain private. Admin can view completion totals only.';
-  var roleResult=await api.from('study_user_profiles').select('role').eq('user_id',user.id).maybeSingle();
+  var roleResult=await api.from('study_user_profiles').select('role,display_name').eq('user_id',user.id).maybeSingle();
   $('admin-link').classList.toggle('hidden',!!roleResult.error||!roleResult.data||roleResult.data.role!=='admin');
   if(roleResult.error){msg('Unable to verify your enrollment: '+roleResult.error.message);return;}
+  if(roleResult.data && roleResult.data.display_name){$('signed-email').textContent=roleResult.data.display_name+' · '+(user.email||'Signed in');}
   if(!roleResult.data){
     $('account-instructions').textContent='This email address is not enrolled in the study program. Please use the approved Kathy, CJ, or Admin account.';
     $('admin-link').classList.add('hidden');
