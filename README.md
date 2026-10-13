@@ -26,24 +26,22 @@ Authentication and storage use **Supabase** project `Personal-Bible-Study-Tracki
 
 - **Kathy and CJ — students**: each signs in with their own email link. Each person sees only their own progress and private journal entries.
 - **Admin**: can view each student's completed lesson totals, percentages, and last completed activity in the separate Admin page. **Cannot read journal entries or personal reflection content.**
-- The Admin role is never granted by a public browser, email address claim, or user-editable profile. An owner must assign it manually to a verified, authenticated Supabase user via a trusted server-side SQL update.
+- The Admin role is never granted by a public browser, email address claim, or user-editable profile. The role is assigned automatically by the protected database enrollment mapping when the approved email identity first signs in.
 - New user accounts default to **student**. The admin dashboard displays only authorized records from the `admin_study_progress()` RPC.
 - The study pages use `study_day_progress` with row-level security (RLS). Only the relevant signed-in account can read and write that person's records.
-- **No accounts are pre-created.** Kathy, CJ and Admin must sign in with their real email addresses, after which they can be matched to roles. The Admin role remains unassigned until an administrator email is specified.
+- **No accounts are pre-created.** Kathy, CJ and Admin must sign in with their real email addresses, after which they can be matched to roles. The Admin role will activate automatically when its preapproved email identity signs in.
 
-### To assign the Admin role after first sign-in
+### Approved accounts and activation
 
-Open [Supabase SQL Editor](https://supabase.com/dashboard/project/lyuyzfmfcsbjeizgmgvp/sql/new) with project owner permissions. Use the exact email address of the intended administrator and confirm the account belongs to them. Example:
+A **private Supabase enrollment list**, not checked into this public repository, identifies three accounts:
 
-```sql
-update public.study_user_profiles as p
-set role = 'admin', display_name = 'Admin'
-from auth.users as u
-where u.id = p.user_id
-  and lower(u.email) = lower('REPLACE_WITH_VERIFIED_ADMIN_EMAIL');
-```
+- Kathy — Student
+- CJ — Student
+- Admin — Administrator
 
-For Kathy and CJ, similarly update `display_name` for their respective verified email addresses, but **do not change their `role` from `student`**.
+The authorized email identities are stored only in the database. The first successful email-link sign-in automatically creates the corresponding user profile with its preassigned role. **Nobody needs to run SQL manually to grant Admin privileges.** Someone using a different email address can neither access study progress nor claim an Admin role. Study completion and private journals remain owned by each signed-in user; the role-restricted reporting function only returns student completion counts.
+
+Because Supabase Auth has not yet registered the three sign-ins, each user must enter their approved email on the [account page](https://ckcgoodnews-oss.github.io/Personal-Relationship/account/), receive a secure email link, and open it. **No passwords or invitation emails were sent by the repository publishing process.**
 
 ### Authentication URL configuration
 
