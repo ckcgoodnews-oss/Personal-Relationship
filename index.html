@@ -7,6 +7,9 @@
 <div class="hero-grid"><div><div class="eyebrow">A journey to strengthen our friendship</div><h1>Why Is a Personal Relationship With Jehovah Important?</h1><p>Four weeks of thoughtful Bible reading, Watchtower research, heartfelt meditation, and application to help you draw closer to Jehovah as a Person.</p><div class="pill-row"><span class="pill">28 guided daily lessons</span><span class="pill">NWT &amp; WOL only</span><span class="pill">Personal journal</span><span class="pill">Progress tracking</span></div></div><aside class="quote"><div class="eyebrow">Theme scripture</div><blockquote>“Draw close to God, and he will draw close to you.”</blockquote><a href="https://wol.jw.org/en/wol/b/r1/lp-e/nwtsty/59/4" rel="noopener noreferrer" target="_blank">James 4:8 — New World Translation ↗</a><p>Seek to know Jehovah’s thoughts, feelings, and ways — not simply to finish a reading assignment.</p></aside></div></div></header>
 <main class="main" id="app"><p>Loading your personal study program…</p></main>
 <footer class="footer"><div class="footer-inner"><strong>Keep drawing close to Jehovah.</strong><p>Research links go only to <a href="https://wol.jw.org/en/wol/h/r1/lp-e">Watchtower Online Library</a> and the <a href="https://wol.jw.org/en/wol/b/r1/lp-e/nwtsty/59/4">New World Translation (Study Edition)</a>. Unofficial personal study aid; not produced or endorsed by Jehovah’s Witnesses or the Watch Tower Bible and Tract Society.</p><p>Privacy: All journal entries and completion marks stay in your browser storage. They are not uploaded to this website, GitHub, or a server. Export your journal before clearing browser data or switching devices.</p></div></footer>
+<script src="shared/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="shared/study-cloud.js"></script>
 <script>(function () {
   'use strict';
   const resources = {
@@ -56,7 +59,7 @@
     [28,'Jehovah, My Friend Forever','Psalm 73:28',19,73,'wt25','Paragraphs 18–19','How has this program affected my appreciation for Jehovah? What kind of friendship do I want a year from now?','Write a one-sentence personal goal and thank Jehovah for his friendship.']
   ];
   const KEY = 'personal-relationship-with-jehovah-v1';
-  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { return {}; } };
+  const load = () => { try { return JSON.parse(localStorage.getItem(window.StudyCloud?.scopedKey(KEY) || KEY) || '{}'); } catch { return {}; } };
   let state = load();
   if (!state.notes || typeof state.notes !== 'object') state.notes = {};
   if (!state.completed || typeof state.completed !== 'object') state.completed = {};
@@ -66,7 +69,8 @@
   let interval = null;
   const root = document.getElementById('app');
   const escapeHTML = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); return true; } catch { return false; } };
+  let cloudHandle = null;
+  const save = () => { try { localStorage.setItem(window.StudyCloud?.scopedKey(KEY) || KEY, JSON.stringify(state)); cloudHandle?.onChange(state); return true; } catch { return false; } };
   const bible = d => 'https://wol.jw.org/en/wol/b/r1/lp-e/nwtsty/' + d[3] + '/' + d[4];
   const external = (href, text) => `<a href="${escapeHTML(href)}" rel="noopener noreferrer" target="_blank">${escapeHTML(text)} <span aria-hidden="true">↗</span></a>`;
   const count = () => items.filter(d => state.completed[d[0]]).length;
@@ -134,5 +138,6 @@
   });
   window.addEventListener('hashchange',()=>{const match=location.hash.match(/day-(\d+)/);if(match&&Number(match[1])!==selected)navigate(Number(match[1]));});
   render();
+  cloudHandle = window.StudyCloud?.attach({studyId:'jehovah-friendship',storageKey:KEY,read:()=>state,replace:updated=>{state=updated;render();}}) || null;
 })();
 </script></body></html>
