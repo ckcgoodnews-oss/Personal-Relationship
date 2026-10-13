@@ -65,6 +65,22 @@ All study resources now have **optional, expandable teaching aids** to help a st
 
 The reusable study helper lives at `shared/auxiliary-qa.js`. Suggested answers are tucked into individually expandable sections so the conductor can ask the question **before** revealing a model response. They are teaching aids, not a substitute for the student's own answer, conscience, or meditation. Every existing day picker, journal, and completion control remains in place.
 
+### Exact-reference standard (verified against WOL/JW.org)
+
+Every auxiliary Q&A panel now identifies:
+
+1. **NWT text** to read first (book, chapter, and verse).
+2. **Full title** of the assigned publication or book, as shown by the official source.
+3. **Issue date and article page span** (for a magazine), or **book chapter and chapter page span** (for a printed book).
+4. **Specific paragraph numbers, numbered lesson section, or exact heading** identifying the assigned portion; if an article has no numbered paragraphs, it is explicitly identified as such.
+5. **Direct official WOL URL** for the assigned material, so the conductor can inspect it before using the suggested answers.
+
+**Citation example:** *The Watchtower* (Study), April 2025, “Drawing Near to God Is Good” for Us!, **pp. 8–13, ¶1–2**, paired with **James 4:8 (NWT)**. **pp. 8–13 identifies the entire printed article**, not the pages containing only paragraphs 1–2. Do not represent an unverified individual printed page as a paragraph-specific page.
+
+Source titles corrected during the audit include *Draw Close to Jehovah*, chap. 2, “Can You Really ‘Draw Close to God’?” (pp. 16–25), and *How to Remain in God's Love*, chap. 2, “A Good Conscience With God” (pp. 16–30). Page spans were checked against the metadata shown by Watchtower Online Library.
+
+For the six custom training-method sections, the guide cites exact NWT passages and does **not** invent periodical pages or paragraphs where no official article was assigned.
+
 ## Username/email and password accounts
 
 The study account page now defaults to **email + password** sign-in. Email is the login username. Previously verified Kathy and Admin accounts can use their existing signed-in session or request one email link to set their own permanent password; CJ has not yet activated an account and can be created by Admin without sending an email.
