@@ -37,7 +37,7 @@
    who.textContent='Signed in as '+(user.email||'your account');
    var r=await api.from('study_user_profiles').select('role').eq('user_id',user.id).maybeSingle();
    if(r.error)throw r.error;
-   if(!r.data||r.data.role!=='admin'){msg.textContent='This account is not designated as Admin. The account owner must assign the role in Supabase after the admin signs in.';return;}
+   if(!r.data||r.data.role!=='admin'){msg.textContent='This account is not designated as Admin. Use the approved administrator email to sign in; its role is assigned automatically at first sign-in.';return;}
    document.getElementById('refresh').addEventListener('click',refresh);
    await refresh();
  }catch(e){msg.className='error';msg.textContent='Administrator dashboard unavailable: '+e.message}
