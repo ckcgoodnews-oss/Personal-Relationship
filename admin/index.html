@@ -1,0 +1,45 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#165343">
+<title>Admin · Personal Bible Study Hub</title><meta name="description" content="Restricted admin-only study completion dashboard.">
+<style>:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f5f8f4;color:#183c32;line-height:1.52}*{box-sizing:border-box}body{margin:0}a{color:#175b4b}header{background:linear-gradient(110deg,#113e32,#26775c);color:white;padding:28px 18px 64px}header>div,main{max-width:980px;margin:auto}header a{color:#e9fff2}h1{font:normal clamp(2rem,5vw,3.2rem) Georgia,serif;margin:24px 0 8px}header p{color:#e0f1e6;max-width:660px}main{padding:0 17px 44px;margin:-32px auto 0;position:relative}.panel{background:white;border:1px solid #d1e2d5;border-radius:17px;box-shadow:0 9px 25px #113e3212;padding:21px;margin-bottom:17px}.muted{font-size:.88rem;color:#576f63}h2{font:normal 1.5rem Georgia,serif;margin:0 0 10px}.row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}.badge{border-radius:99px;padding:5px 11px;color:#225c48;background:#e4f1e8;font-size:.81rem}.button{display:inline-block;padding:9px 13px;background:#1c6651;color:white;text-decoration:none;border-radius:9px;font-weight:700}.person{border:1px solid #d7e6d9;border-radius:13px;padding:16px;margin-top:14px}.person h3{font:normal 1.4rem Georgia,serif;margin:0}.score{font-weight:750;font-size:1.25rem}.study{border-top:1px solid #e1e9e0;margin-top:14px;padding-top:12px}.study strong{font-size:.92rem}.track{height:8px;border-radius:50px;background:#e3ebe5;overflow:hidden;margin:8px 0}.track div{background:#368366;height:100%;transition:width .25s}.empty{color:#5e776a;padding:14px 0}.error{color:#963e30}.hidden{display:none!important}@media(max-width:600px){.panel{padding:16px}}</style></head>
+<body><header><div><a href="../hub/">← All Bible studies</a><h1>Administrator Dashboard</h1><p>View each participant's study completion status. Journal entries, personal reflections, and scenario responses are not accessible through this dashboard.</p></div></header>
+<main><section class="panel"><div class="row"><div><h2>Secure admin access</h2><p id="identity" class="muted">Checking your sign-in and role…</p></div><a class="button" href="../account/">Manage sign-in</a></div><p role="status" id="message" class="muted"></p></section>
+<section class="panel hidden" id="summary"><div class="row"><h2>Participants' progress</h2><span class="badge" id="overall">—</span></div><p class="muted">Completed lesson counts are read through a restricted database function. No journals or note content are transmitted.</p><div id="people"></div><div class="row" style="margin-top:20px"><button class="button" style="border:0;cursor:pointer" type="button" id="refresh">Refresh progress</button><span class="muted" id="updated"></span></div></section>
+</main><script src="../shared/config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="../shared/study-cloud.js"></script>
+<script>
+(async function(){
+ 'use strict';var cloud=window.StudyCloud,api,msg=document.getElementById('message'),who=document.getElementById('identity');
+ var summary=document.getElementById('summary'),people=document.getElementById('people');
+ function safe(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+ function when(x){if(!x)return 'Not started';var d=new Date(x);return isNaN(d.getTime())?'—':d.toLocaleDateString();}
+ async function refresh(){
+   msg.textContent='Loading completion totals…';
+   var r=await api.rpc('admin_study_progress');
+   if(r.error){summary.classList.add('hidden');msg.className='error';msg.textContent='Unable to read admin report: '+r.error.message;return;}
+   var map={};(r.data||[]).forEach(function(v){if(!map[v.user_id])map[v.user_id]={name:v.display_name,id:v.user_id,rows:[]};map[v.user_id].rows.push(v);});
+   var users=Object.values(map),done=0,all=0;
+   people.innerHTML=users.map(function(u){
+     var completed=u.rows.reduce(function(n,r){return n+Number(r.completed_days||0)},0);
+     var total=u.rows.reduce(function(n,r){return n+Number(r.total_days||0)},0);
+     done+=completed;all+=total;
+     return '<article class="person"><div class="row"><h3>'+safe(u.name)+'</h3><div class="score">'+completed+' / '+total+'</div></div>'+
+       u.rows.map(function(r){var n=Number(r.completed_days||0),t=Number(r.total_days||0),pct=t?Math.min(100,Math.round(100*n/t)):0;
+         return '<div class="study"><div class="row"><strong>'+safe(r.study_title)+'</strong><span class="muted">'+n+' / '+t+' · '+pct+'%</span></div><div class="track"><div style="width:'+pct+'%"></div></div><div class="muted">Last completed activity: '+safe(when(r.last_completed_at))+'</div></div>';
+       }).join('')+'</article>';
+   }).join('')||'<p class="empty">No student accounts have been registered yet. Kathy and CJ will appear once they have signed in and their profiles are assigned.</p>';
+   document.getElementById('overall').textContent=users.length+' students · '+done+'/'+all+' completions';
+   document.getElementById('updated').textContent='Updated '+new Date().toLocaleTimeString();
+   summary.classList.remove('hidden');msg.className='muted';msg.textContent='Only completion summaries are available here.';
+ }
+ try{
+   api=cloud.api();
+   var auth=await api.auth.getUser();var user=auth.data&&auth.data.user;
+   if(!user){who.textContent='You are not signed in.';msg.textContent='Sign in using your admin email on the account page, then come back here.';return;}
+   who.textContent='Signed in as '+(user.email||'your account');
+   var r=await api.from('study_user_profiles').select('role').eq('user_id',user.id).maybeSingle();
+   if(r.error)throw r.error;
+   if(!r.data||r.data.role!=='admin'){msg.textContent='This account is not designated as Admin. The account owner must assign the role in Supabase after the admin signs in.';return;}
+   document.getElementById('refresh').addEventListener('click',refresh);
+   await refresh();
+ }catch(e){msg.className='error';msg.textContent='Administrator dashboard unavailable: '+e.message}
+})();
+</script></body></html>
