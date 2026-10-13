@@ -75,6 +75,20 @@ Supabase Edge Function: `study-accounts` (requires a signed-in JWT). It verifies
 
 Password recovery is intentionally **administrator-mediated for students**, avoiding Supabase's restrictive email service. Admin can change their own password while authenticated. If the administrator loses access to every active session and cannot get a magic link, account recovery must be performed by the Supabase project owner; do not publish admin recovery secrets in GitHub.
 
+## Recover a locked-out Administrator
+
+The [Personal Study Dashboard](https://ckcgoodnews-oss.github.io/Personal-Relationship/account/) includes **Locked out? Reset Admin password**. Recovering Admin access does **not** require a working email sender.
+
+1. Sign in to the [Supabase SQL Editor](https://supabase.com/dashboard/project/lyuyzfmfcsbjeizgmgvp/sql/new) as a project owner.
+2. Execute **`select study_private.issue_admin_password_recovery();`**. Copy the 64-character output from the SQL result table. Do **not** paste the code into GitHub, public posts, or ChatGPT.
+3. Open the Study Dashboard and select **Locked out? Reset Admin password**.
+4. Paste the code and choose a permanent password of at least 12 characters containing uppercase, lowercase, a number, and a symbol. Confirm and save.
+5. Sign in as Admin with the new password.
+
+The code is valid **15 minutes**, **one use only**. Generating another code invalidates the previous code. The SQL Editor generator is accessible only to the privileged Postgres role, and it stores only a SHA-256 digest of the code. The account password is updated by the `study-admin-recovery` Supabase Edge Function, which uses the service role only on the server and requires proof of possession of a valid one-time code. The code is never embedded in GitHub source.
+
+Do not try to reset an Admin password by editing `auth.users.encrypted_password` manually, and never put a Supabase secret key in website code.
+
 ## Local device notes and progress
 
 The two 28-day apps include cloud synchronization when signed in. Older device-only entries may be imported by the account holder. Imported guides display a separate progress panel to mark their 7 lessons or the training guide's completion milestone; existing local guide preferences remain on that device unless manually transferred.
