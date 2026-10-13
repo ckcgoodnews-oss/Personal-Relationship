@@ -13,10 +13,73 @@ function referenceMarkup(study,id){
  return '<div class="aux-reference"><strong>Read in the NWT:</strong> '+escapeHTML(bible)+'.<div><strong>Assigned publication:</strong> <a target="_blank" rel="noopener noreferrer" href="'+escapeHTML(item.url)+'">'+escapeHTML(citation)+' ↗</a></div><div class="aux-help">The page range identifies the whole article or chapter. The paragraph/section number identifies the exact reading within it.</div></div>';
 }
 const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const css='<style>.aux-guide{margin:18px 0;padding:15px 17px;border:1px solid #c6ddcd;border-radius:12px;background:#f2f8f3;color:#1a4032;font:normal 15px/1.55 system-ui,-apple-system,sans-serif}.aux-guide h3{font:700 1.1rem/1.4 system-ui,sans-serif!important;color:#1e5645;margin:0 0 8px!important}.aux-guide p{margin:5px 0 10px}.aux-guide details{border-top:1px solid #d5e7d8;padding:8px 0}.aux-guide details:first-of-type{border-top:0}.aux-guide summary{cursor:pointer;font-weight:650;list-style:auto}.aux-guide .aux-answer{padding:8px 11px;background:#fff;border-left:3px solid #369174;border-radius:5px;margin:9px 0}.aux-guide .aux-point{font-weight:650;border-top:1px solid #d5e7d8;padding-top:10px;margin-top:8px}.aux-guide .aux-help{font-size:.83rem;color:#536f60}.aux-reference{margin:12px 0;padding:12px 13px;background:#fff;border:1px solid #d6e8db;border-radius:8px}.aux-reference>div{margin-top:6px}.aux-reference a{color:#165a4b;font-weight:600;text-decoration:underline;text-underline-offset:2px}</style>';
-function render(study,id){let r=bank[study]&&bank[study][Number(id)-1];if(!r)return '';let [q1,a1,q2,a2,point]=r;
-return css+'<section class="aux-guide" aria-label="Auxiliary questions and suggested answers"><h3>Helpful teaching questions</h3>'+referenceMarkup(study,id)+'<p class="aux-help">Ask the question first. Let the student reason from the assigned New World Translation passage before opening the suggested answer.</p>'+
-[[q1,a1],[q2,a2]].map(([q,a],i)=>'<details><summary>Question '+(i+1)+': '+escapeHTML(q)+'</summary><div class="aux-answer"><strong>Suggested answer:</strong> '+escapeHTML(a)+'</div></details>').join('')+
-'<p class="aux-point">Main point: '+escapeHTML(point)+'</p></section>'}
-window.StudyAuxiliary={render:render,count:function(study){return(bank[study]||[]).length;},reference:function(study,id){return referenceMarkup(study,id);}};
+
+const css='<style>'+
+'.aux-guide{margin:20px 0;padding:18px;border:2px solid #bdd8c6;border-radius:16px;background:#f3f9f4;color:#17392e;font:normal 16px/1.6 system-ui,-apple-system,sans-serif;max-width:100%}'+
+'.aux-guide *{box-sizing:border-box}.aux-guide h3{font:750 1.22rem/1.4 system-ui,sans-serif!important;color:#123e31!important;margin:0 0 8px!important;text-transform:none!important;letter-spacing:normal!important;display:block!important}'+
+'.aux-guide p{margin:6px 0 12px}.aux-guide .aux-intro{font-size:.94rem;margin:4px 0 14px;color:#344f42}.aux-guide .aux-help{font-size:.85rem;color:#365b47}'+
+'.aux-reference{margin:12px 0;padding:12px 14px;background:#fff;border:1px solid #c8dfd0;border-radius:10px;font-size:.92rem}.aux-reference>div{margin-top:6px}.aux-reference a{color:#165a4b;font-weight:700;text-decoration:underline;text-underline-offset:2px}'+
+'.aux-inference{margin:14px 0;border:2px solid #c2ddce;border-radius:14px;background:#fff;overflow:hidden}'+
+'.aux-inference-heading{padding:13px 15px 8px}.aux-inference-index{display:inline-block;font-size:.76rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:4px 10px;background:#dceee4;color:#17533e;border-radius:99px}'+
+'.aux-question{font-size:1.03rem;font-weight:760;line-height:1.45;margin:10px 0!important;color:#153d31}'+
+'.aux-reasoning{padding:10px 14px;margin:0 13px 13px;border-left:4px solid #a3c9b2;background:#f1f7f1;border-radius:0 8px 8px 0;font-size:.91rem;color:#234a37}'+
+'.aux-reasoning strong{color:#17543e}.aux-reveal{margin:0 13px 13px;border:2px solid #167254;border-radius:10px;overflow:hidden}'+
+'.aux-reveal>summary{display:flex;align-items:center;gap:10px;list-style:none;cursor:pointer;min-height:54px;padding:10px 12px;background:#e0f2e8;color:#114631;font:800 .95rem/1.35 system-ui,sans-serif}'+
+'.aux-reveal>summary::-webkit-details-marker{display:none}.aux-reveal>summary::marker{content:""}'+
+'.aux-reveal>summary:hover{background:#cbead8}.aux-reveal>summary:focus-visible{outline:3px solid #f0a800;outline-offset:-3px}'+
+'.aux-chevron{display:inline-flex;justify-content:center;align-items:center;flex:0 0 34px;width:34px;height:34px;background:#176849;color:#fff;border-radius:7px;font-size:1.4rem;line-height:1;transition:transform .15s ease}'+
+'.aux-reveal[open] .aux-chevron{transform:rotate(90deg)}.aux-reveal[open]>summary{background:#d1e8dc}.aux-label-shown{display:none}.aux-reveal[open] .aux-label-hidden{display:none}.aux-reveal[open] .aux-label-shown{display:inline}'+
+'.aux-answer{padding:14px 16px;background:#fff;color:#20392e;border-top:2px solid #c9dfd1;font-size:.98rem;line-height:1.65}'+
+'.aux-answer strong{color:#14573e}.aux-answer .aux-check{display:block;font-size:.86rem;margin-top:9px;color:#476553}'+
+'.aux-main{margin:16px 0 0;border:2px solid #bbd4c4;border-radius:11px;overflow:hidden}'+
+'.aux-main summary{display:flex;gap:10px;align-items:center;min-height:52px;padding:10px 13px;cursor:pointer;list-style:none;background:#fef7df;color:#5c4516;font-weight:800}'+
+'.aux-main summary::-webkit-details-marker{display:none}.aux-main summary::marker{content:""}'+
+'.aux-main summary:focus-visible{outline:3px solid #a46c00;outline-offset:-3px}'+
+'.aux-main .aux-chevron{background:#875d14}.aux-main[open] .aux-chevron{transform:rotate(90deg)}.aux-main .aux-answer{border-top-color:#e7d7a3}'+
+'@media(max-width:520px){.aux-guide{padding:12px}.aux-inference-heading{padding:12px 12px 7px}.aux-reasoning{margin:0 10px 11px}.aux-reveal{margin:0 10px 11px}.aux-reveal>summary{padding:9px 10px;min-height:56px}}'+
+'@media(prefers-reduced-motion:reduce){.aux-chevron{transition:none}}'+
+'</style>';
+
+function thinkingCue(question,index){
+  const q=String(question).toLowerCase();
+  if(index===1||q.includes('could someone')||q.includes('could a ')||q.includes('how can')||q.includes('what would')){
+    return 'Apply: Think of one realistic situation. Which Bible principle guides the next step?';
+  }
+  if(q.startsWith('why')||q.startsWith('how')){
+    return 'Reason: Find the key idea in the assigned verse. How does it lead to the conclusion?';
+  }
+  if(q.startsWith('what')||q.startsWith('which')||q.startsWith('who')){
+    return 'Observe: Locate the important words in the verse. Explain them in your own words.';
+  }
+  return 'Compare: What does the Scripture actually say? What conclusion does that support?';
+}
+function inferenceMarkup(question,answer,index){
+  const number=index+1;
+  return '<section class="aux-inference" aria-label="Inference '+number+'">'+
+    '<div class="aux-inference-heading"><span class="aux-inference-index">Inference '+number+' of 2</span>'+
+    '<p class="aux-question">'+escapeHTML(question)+'</p></div>'+
+    '<div class="aux-reasoning"><strong>Think first:</strong> '+escapeHTML(thinkingCue(question,index))+
+    '<div class="aux-help">Say your answer aloud or write it down before opening the arrow.</div></div>'+
+    '<details class="aux-reveal"><summary><span class="aux-chevron" aria-hidden="true">▸</span>'+
+    '<span><span class="aux-label-hidden">▼ Tap to reveal suggested answer</span>'+
+    '<span class="aux-label-shown">Answer shown — tap to hide</span></span></summary>'+
+    '<div class="aux-answer"><strong>Suggested answer:</strong> '+escapeHTML(answer)+
+    '<span class="aux-check"><strong>Check your reasoning:</strong> Which words or principle in the cited Bible passage support this answer?</span></div></details></section>';
+}
+function render(study,id){
+  const r=bank[study]&&bank[study][Number(id)-1];if(!r)return '';
+  const [q1,a1,q2,a2,point]=r;
+  return css+'<section class="aux-guide" aria-label="Auxiliary reasoning questions with hidden answers">'+
+    '<h3>Reason It Out — One Question at a Time</h3>'+referenceMarkup(study,id)+
+    '<p class="aux-intro">1. Read the Scripture. 2. Think through each inference. 3. Tap the large green arrow to check your answer. <strong>The answers stay hidden until you choose to reveal them.</strong></p>'+
+    inferenceMarkup(q1,a1,0)+inferenceMarkup(q2,a2,1)+
+    '<details class="aux-main"><summary><span class="aux-chevron" aria-hidden="true">▸</span>'+
+    '<span>▼ Reveal the main teaching point (after both questions)</span></summary>'+
+    '<div class="aux-answer"><strong>Main point:</strong> '+escapeHTML(point)+'</div></details></section>';
+}
+window.StudyAuxiliary={
+  render:render,
+  count:function(study){return(bank[study]||[]).length;},
+  reference:function(study,id){return referenceMarkup(study,id);}
+};
 })();
