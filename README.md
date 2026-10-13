@@ -54,6 +54,12 @@ https://ckcgoodnews-oss.github.io/Personal-Relationship/account/
 as the site URL and redirect URL. Ensure the Email provider is enabled.
 
 
+### Concentration-friendly inference reveal (October 2026)
+
+Each of the **69** study sections now has **two independently expandable inference cards** (**138 questions total**) and a separately expandable main takeaway. Nothing is expanded initially. The large, high-contrast arrow and the text **Tap to reveal suggested answer** remain visible on mobile and desktop; tapping them opens a suggested answer and a prompt to find its Scriptural basis. A short **Think first** cue helps students practice observation, connecting evidence to a conclusion, and practical application. These cues and answers can be reviewed at the student's pace without counting down or forcing a response.
+
+The main teaching point is also hidden until the learner chooses to reveal it after working both questions. The controls use native HTML `<details>/<summary>`, with keyboard accessibility and reduced-motion support; no additional account settings or data storage is required. Open `shared/auxiliary-qa.js` to change styles and question presentation across all four studies at once.
+
 ## Auxiliary teaching questions and suggested answers
 
 All study resources now have **optional, expandable teaching aids** to help a student reason through each section's primary point, using the assigned **New World Translation** passage:
