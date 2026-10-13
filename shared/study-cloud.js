@@ -8,7 +8,9 @@ var marker='personal-study-auth-user-v1';
 var client;
 var studies=[
 {id:'jehovah-friendship',name:'Personal Relationship With Jehovah',path:'index.html',total:28},
-{id:'conscience',name:'Do Not Impose Your Conscience on Others',path:'conscience-study.html',total:28}
+{id:'conscience',name:'Do Not Impose Your Conscience on Others',path:'conscience-study.html',total:28},
+{id:'mother-study',name:'Loving My Adult Son Without Controlling Him',path:'studies/mother-study.html',total:7},
+{id:'bible-study-guide',name:'Daily Personal Bible Study Guide',path:'studies/daily-study-guide.html',total:1}
 ];
 function api(){
  if(!window.supabase||!window.supabase.createClient)throw Error('Supabase library did not load.');
