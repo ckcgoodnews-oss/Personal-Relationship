@@ -29,7 +29,7 @@ Authentication and storage use **Supabase** project `Personal-Bible-Study-Tracki
 - The Admin role is never granted by a public browser, email address claim, or user-editable profile. The role is assigned automatically by the protected database enrollment mapping when the approved email identity first signs in.
 - New user accounts default to **student**. The admin dashboard displays only authorized records from the `admin_study_progress()` RPC.
 - The study pages use `study_day_progress` with row-level security (RLS). Only the relevant signed-in account can read and write that person's records.
-- **No accounts are pre-created.** Kathy, CJ and Admin must sign in with their real email addresses, after which they can be matched to roles. The Admin role will activate automatically when its preapproved email identity signs in.
+- **Accounts are created in Supabase Auth on first valid email sign-in or by Admin.** Kathy, CJ and Admin must sign in with their real email addresses, after which they can be matched to roles. The Admin role will activate automatically when its preapproved email identity signs in.
 
 ### Approved accounts and activation
 
@@ -52,6 +52,28 @@ https://ckcgoodnews-oss.github.io/Personal-Relationship/account/
 ```
 
 as the site URL and redirect URL. Ensure the Email provider is enabled.
+
+
+## Username/email and password accounts
+
+The study account page now defaults to **email + password** sign-in. Email is the login username. Previously verified Kathy and Admin accounts can use their existing signed-in session or request one email link to set their own permanent password; CJ has not yet activated an account and can be created by Admin without sending an email.
+
+The [Admin dashboard](https://ckcgoodnews-oss.github.io/Personal-Relationship/admin/) offers a **Manage student accounts** panel. After Admin signs in, it can:
+
+- Create a student with a display name and email address (without sending an email).
+- Generate a **unique, cryptographically random temporary password**, displayed once for Admin to pass privately to the student.
+- Issue a new temporary password for an existing student when they forget theirs.
+- View approved account activation and forced-password-change status.
+
+The [study account dashboard](https://ckcgoodnews-oss.github.io/Personal-Relationship/account/) requires a student using a temporary password to set a new password before their progress and notes unlock. Passwords are managed by Supabase Auth, not stored in GitHub or the study database.
+
+**Do not reuse a shared default password such as `pa$word01`.** A disclosed common password would compromise all student accounts, even if users were required to change it later. The server-generated password is always unique.
+
+### Protected account management endpoint
+
+Supabase Edge Function: `study-accounts` (requires a signed-in JWT). It verifies the user through Supabase Auth and applies database-backed Administrator checks on each create/reset/roster request. Privileged service credentials stay only in Supabase's function environment; never in public GitHub Pages source code. Only an approved Admin can manage student accounts; no one can create an Admin account through the website.
+
+Password recovery is intentionally **administrator-mediated for students**, avoiding Supabase's restrictive email service. Admin can change their own password while authenticated. If the administrator loses access to every active session and cannot get a magic link, account recovery must be performed by the Supabase project owner; do not publish admin recovery secrets in GitHub.
 
 ## Local device notes and progress
 
