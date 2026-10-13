@@ -54,6 +54,17 @@ https://ckcgoodnews-oss.github.io/Personal-Relationship/account/
 as the site URL and redirect URL. Ensure the Email provider is enabled.
 
 
+## Auxiliary teaching questions and suggested answers
+
+All study resources now have **optional, expandable teaching aids** to help a student reason through each section's primary point, using the assigned **New World Translation** passage:
+
+- *Personal Relationship With Jehovah*: 28 daily lessons, each with two auxiliary questions, suggested answers, and a main point.
+- *Do Not Impose Your Conscience on Others*: 28 daily lessons with the same format.
+- *Loving My Adult Son Without Controlling Him*: 7 daily lessons with the same format.
+- *Daily Personal Bible Study Guide*: six instructional sections with two auxiliary questions and a key point each.
+
+The reusable study helper lives at `shared/auxiliary-qa.js`. Suggested answers are tucked into individually expandable sections so the conductor can ask the question **before** revealing a model response. They are teaching aids, not a substitute for the student's own answer, conscience, or meditation. Every existing day picker, journal, and completion control remains in place.
+
 ## Username/email and password accounts
 
 The study account page now defaults to **email + password** sign-in. Email is the login username. Previously verified Kathy and Admin accounts can use their existing signed-in session or request one email link to set their own permanent password; CJ has not yet activated an account and can be created by Admin without sending an email.
