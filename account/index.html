@@ -29,18 +29,18 @@ small,.sub{font-size:.88rem;color:#5d7568}.hidden{display:none!important}
 footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
 @media(max-width:650px){.studies{grid-template-columns:1fr}.card,.study{padding:17px}}
 </style></head><body>
-<header><div class="wrap"><a href="../">← Personal Bible Studies</a><h1>My Study Dashboard</h1><p>Keep track of all your personal Bible studies. Your study completion and journal entries are private to your own account.</p></div></header>
+<header><div class="wrap"><a href="../hub/">← Personal Bible Study Hub</a><h1>My Study Dashboard</h1><p>Keep track of all your personal Bible studies in one place. Your reflections stay private; an authorized administrator can view completion totals.</p></div></header>
 <main>
 <section class="card"><h2>My study account</h2>
 <p class="sub" id="account-instructions">Checking account status…</p>
 <form id="sign-in" class="hidden"><label for="email">Email</label><input type="email" id="email" autocomplete="email" placeholder="your@email.com" required>
 <button type="submit">Email me a sign-in link</button></form>
 <div id="signed-in" class="row hidden"><b id="signed-email"></b><button type="button" id="sign-out" class="secondary">Sign out</button></div>
-<p class="status" id="status" role="status" aria-live="polite"></p></section>
-<section class="card"><div class="row"><h2>Combined progress</h2><div class="big" id="total">— / 56</div></div>
+<p class="status" id="status" role="status" aria-live="polite"></p><p id="admin-link" class="hidden"><a class="button" href="../admin/">Open administrator dashboard →</a></p></section>
+<section class="card"><div class="row"><h2>Combined progress</h2><div class="big" id="total">— / 64</div></div>
 <div class="sub" id="progress-message">Sign in to view your progress across studies and devices.</div></section>
 <section class="studies" id="study-list"></section>
-<section class="card" style="margin-top:17px"><h2>Your journal stays yours</h2><p class="sub">Only the signed-in user can read or edit their progress and notes through this app. GitHub Pages hosts the public website code, not your private journal. Older browser-only notes can be imported from the study page after signing in. There is no administrator progress-reporting dashboard.</p><p class="sub">If your email link doesn't work, confirm that this page is authorized under Supabase Authentication → URL Configuration. Study and research links lead to the New World Translation and Watchtower Online Library.</p></section>
+<section class="card" style="margin-top:17px"><h2>Your journal stays yours</h2><p class="sub">Only the signed-in user can read or edit their progress and notes through this app. GitHub Pages hosts the public website code, not your private journal. Older browser-only notes can be imported from the study page after signing in. An authorized Admin may view the number of completed lessons and last completion date, but never journal entries or personal reflections.</p><p class="sub">If your email link doesn't work, confirm that this page is authorized under Supabase Authentication → URL Configuration. Study and research links lead to the New World Translation and Watchtower Online Library.</p></section>
 </main><footer>Unofficial personal study aid · Not affiliated with jw.org or the Watch Tower Bible and Tract Society</footer>
 <script src="../shared/config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -66,14 +66,16 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
   if(!user){
    localStorage.removeItem('personal-study-auth-user-v1');
    $('sign-in').classList.remove('hidden');$('signed-in').classList.add('hidden');
-   $('account-instructions').textContent='Sign in with an email link to securely sync your notes across devices.';
+   $('account-instructions').textContent='Sign in with an email link to securely sync your notes across devices.';$('admin-link').classList.add('hidden');
    $('total').textContent='— / 56';$('progress-message').textContent='Sign in to see your private progress.';cards({});
    return;
   }
   localStorage.setItem('personal-study-auth-user-v1',user.id);
   $('signed-email').textContent=user.email||'Signed in';
   $('signed-in').classList.remove('hidden');$('sign-in').classList.add('hidden');
-  $('account-instructions').textContent='Only you can see these records when signed into this account.';
+  $('account-instructions').textContent='Your personal study notes remain private. Admin can view completion totals only.';
+  var roleResult=await api.from('study_user_profiles').select('role').eq('user_id',user.id).maybeSingle();
+  $('admin-link').classList.toggle('hidden',!!roleResult.error||!roleResult.data||roleResult.data.role!=='admin');
   var q=await api.from('study_day_progress').select('study_id,day_number,is_completed').eq('user_id',user.id);
   if(q.error){msg('Unable to load progress: '+q.error.message);return;}
   var seen={};
