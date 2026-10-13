@@ -33,10 +33,21 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
 <main>
 <section class="card"><h2>My study account</h2>
 <p class="sub" id="account-instructions">Checking account status…</p>
+<form id="password-signin" class="hidden" autocomplete="on">
+<label for="login-email">Email</label><input type="email" id="login-email" autocomplete="username" placeholder="your@email.com" required>
+<label for="login-password">Password</label><input type="password" id="login-password" autocomplete="current-password" minlength="12" placeholder="Your password" required>
+<button type="submit">Sign in</button></form>
+<p id="signin-options" class="sub hidden"><button type="button" id="toggle-magic" class="secondary">Sign in using an email link instead</button></p>
 <form id="sign-in" class="hidden"><label for="email">Email</label><input type="email" id="email" autocomplete="email" placeholder="your@email.com" required>
 <button type="submit">Email me a sign-in link</button></form><p class="sub" id="email-tip">Email sign-in is subject to a shared Supabase sending limit. If you see “Email rate limit exceeded,” avoid repeated requests and try again after the limit resets. Signed-in sessions still work normally.</p>
 <div id="signed-in" class="row hidden"><b id="signed-email"></b><button type="button" id="sign-out" class="secondary">Sign out</button></div>
-<p class="status" id="status" role="status" aria-live="polite"></p><p id="admin-link" class="hidden"><a class="button" href="../admin/">Open administrator dashboard →</a></p></section>
+<p class="status" id="status" role="status" aria-live="polite"></p><p><button id="change-own-password" class="secondary hidden" type="button">Change my password</button></p><p id="admin-link" class="hidden"><a class="button" href="../admin/">Open administrator dashboard →</a></p></section>
+<section class="card hidden" id="password-section"><div class="row"><h2 id="password-heading">Set your password</h2><span class="sub" id="password-required"></span></div>
+<p class="sub" id="password-instructions">Use a private password containing at least 12 characters, letters, a number, and a symbol. Admin-generated temporary passwords must be changed before using study progress.</p>
+<form id="password-change-form" autocomplete="off"><label for="new-password">New password</label><input id="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required placeholder="At least 12 characters">
+<label for="confirm-password">Confirm password</label><input id="confirm-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required placeholder="Re-enter password">
+<button type="submit">Save new password</button></form>
+<p id="password-status" class="status" role="status"></p></section>
 <section class="card"><div class="row"><h2>Combined progress</h2><div class="big" id="total">— / 64</div></div>
 <div class="sub" id="progress-message">Sign in to view your progress across studies and devices.</div></section>
 <section class="studies" id="study-list"></section>
@@ -48,7 +59,7 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
 <script>
 (async function(){
  'use strict';
- var cloud=window.StudyCloud,api;
+ var cloud=window.StudyCloud,api;var temporaryPasswordRequired=false;
  var $=function(id){return document.getElementById(id);};
  function msg(t){$('status').textContent=t;}
  function escapeHTML(s){return String(s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -65,14 +76,14 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
   var user=r.data&&r.data.user;
   if(!user){
    localStorage.removeItem('personal-study-auth-user-v1');
-   $('sign-in').classList.remove('hidden');$('signed-in').classList.add('hidden');
-   $('account-instructions').textContent='Sign in with an email link to securely sync your notes across devices.';$('admin-link').classList.add('hidden');
+   $('password-signin').classList.remove('hidden');$('sign-in').classList.add('hidden');$('signin-options').classList.remove('hidden');$('signed-in').classList.add('hidden');$('password-section').classList.add('hidden');$('change-own-password').classList.add('hidden');
+   $('account-instructions').textContent='Use your assigned email address and password. If you have no password yet, sign in once with an email link, or ask Admin to create/reset your account.';$('admin-link').classList.add('hidden');
    $('total').textContent='— / 56';$('progress-message').textContent='Sign in to see your private progress.';cards({});
    return;
   }
   localStorage.setItem('personal-study-auth-user-v1',user.id);
   $('signed-email').textContent=user.email||'Signed in';
-  $('signed-in').classList.remove('hidden');$('sign-in').classList.add('hidden');
+  $('signed-in').classList.remove('hidden');$('sign-in').classList.add('hidden');$('password-signin').classList.add('hidden');$('signin-options').classList.add('hidden');
   $('account-instructions').textContent='Your personal study notes remain private. Admin can view completion totals only.';
   var roleResult=await api.from('study_user_profiles').select('role,display_name').eq('user_id',user.id).maybeSingle();
   $('admin-link').classList.toggle('hidden',!!roleResult.error||!roleResult.data||roleResult.data.role!=='admin');
@@ -86,6 +97,19 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
     cards({});
     return;
   }
+  temporaryPasswordRequired=user.app_metadata&&user.app_metadata.study_password_setup_required===true;
+  $('password-section').classList.toggle('hidden',!temporaryPasswordRequired);
+  $('password-heading').textContent=temporaryPasswordRequired?'Change temporary password':'Set or change password';
+  $('password-required').textContent=temporaryPasswordRequired?'Required before studying':'';
+  if(temporaryPasswordRequired){
+    msg('Temporary password accepted. Choose a new private password below to unlock progress.');
+    $('admin-link').classList.add('hidden');
+    $('total').textContent='—';
+    $('progress-message').textContent='Finish setting your password before opening your personal study progress.';
+    cards({});
+    return;
+  }
+  $('change-own-password').classList.remove('hidden');
   var q=await api.from('study_day_progress').select('study_id,day_number,is_completed').eq('user_id',user.id);
   if(q.error){msg('Unable to load progress: '+q.error.message);return;}
   var seen={};
@@ -96,6 +120,51 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
   $('progress-message').textContent='Your progress is saved privately in Supabase and available on your devices.';
   cards(counts);
  }
+ $('toggle-magic').addEventListener('click',function(){
+    var show=$('sign-in').classList.contains('hidden');
+    $('sign-in').classList.toggle('hidden',!show);
+    $('password-signin').classList.toggle('hidden',show);
+    $('toggle-magic').textContent=show?'Use email and password instead':'Sign in using an email link instead';
+ });
+ $('password-signin').addEventListener('submit',async function(e){
+    e.preventDefault();
+    var email=$('login-email').value.trim();
+    var password=$('login-password').value;
+    var button=$('password-signin').querySelector('[type=submit]');
+    button.disabled=true;msg('Signing in securely…');
+    try{
+      var r=await api.auth.signInWithPassword({email:email,password:password});
+      $('login-password').value='';
+      if(r.error){msg('Sign-in failed: '+r.error.message);return;}
+      msg('Signed in.');await render();
+    }catch(err){msg('Unable to sign in: '+err.message);}
+    finally{button.disabled=false;}
+ });
+ $('change-own-password').addEventListener('click',function(){
+   $('password-section').classList.toggle('hidden');
+   $('password-heading').textContent='Change your password';
+ });
+ $('password-change-form').addEventListener('submit',async function(e){
+   e.preventDefault();
+   var password=$('new-password').value,confirmation=$('confirm-password').value;
+   var display=$('password-status');
+   if(password!==confirmation){display.textContent='Passwords do not match.';return;}
+   if(password.length<12||!/[A-Za-z]/.test(password)||!/[0-9]/.test(password)||!/[^A-Za-z0-9]/.test(password)){
+     display.textContent='Use 12 or more characters containing letters, a number, and a symbol.';return;
+   }
+   var btn=$('password-change-form').querySelector('[type=submit]');
+   btn.disabled=true;display.textContent='Saving your new password…';
+   try{
+     var r=await api.functions.invoke('study-accounts',{body:{action:'change_password',password:password}});
+     if(r.error||!r.data||r.data.error){display.textContent='Password change failed: '+(r.data&&r.data.error||r.error&&r.error.message||'Service unavailable');return;}
+     $('new-password').value='';$('confirm-password').value='';
+     display.textContent='Password changed successfully.';
+     var rr=await api.auth.refreshSession();
+     if(rr.error){display.textContent='Password changed. Please sign out and sign in again to refresh account access.';return;}
+     await render();
+   }catch(err){display.textContent='Password change failed: '+err.message;}
+   finally{btn.disabled=false;}
+ });
  // Reduce accidental repeat requests to Supabase's shared project-wide email quota.
  var otpButton=$('sign-in').querySelector('button[type="submit"]');
  var otpCooldownKey='bible-study-otp-last-request-v1';
