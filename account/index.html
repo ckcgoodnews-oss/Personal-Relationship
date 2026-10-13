@@ -34,7 +34,7 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
 <section class="card"><h2>My study account</h2>
 <p class="sub" id="account-instructions">Checking account status…</p>
 <form id="sign-in" class="hidden"><label for="email">Email</label><input type="email" id="email" autocomplete="email" placeholder="your@email.com" required>
-<button type="submit">Email me a sign-in link</button></form>
+<button type="submit">Email me a sign-in link</button></form><p class="sub" id="email-tip">Email sign-in is subject to a shared Supabase sending limit. If you see “Email rate limit exceeded,” avoid repeated requests and try again after the limit resets. Signed-in sessions still work normally.</p>
 <div id="signed-in" class="row hidden"><b id="signed-email"></b><button type="button" id="sign-out" class="secondary">Sign out</button></div>
 <p class="status" id="status" role="status" aria-live="polite"></p><p id="admin-link" class="hidden"><a class="button" href="../admin/">Open administrator dashboard →</a></p></section>
 <section class="card"><div class="row"><h2>Combined progress</h2><div class="big" id="total">— / 64</div></div>
@@ -96,12 +96,40 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
   $('progress-message').textContent='Your progress is saved privately in Supabase and available on your devices.';
   cards(counts);
  }
+ // Reduce accidental repeat requests to Supabase's shared project-wide email quota.
+ var otpButton=$('sign-in').querySelector('button[type="submit"]');
+ var otpCooldownKey='bible-study-otp-last-request-v1';
+ function secondsUntilRetry(){
+   try{
+     var last=Number(localStorage.getItem(otpCooldownKey)||0);
+     return Math.max(0,Math.ceil((last+90000-Date.now())/1000));
+   }catch(e){return 0;}
+ }
+ function refreshOtpButton(){
+   var wait=secondsUntilRetry();
+   otpButton.disabled=wait>0;
+   otpButton.textContent=wait?'Please wait '+wait+'s':'Email me a sign-in link';
+ }
+ refreshOtpButton();
+ setInterval(refreshOtpButton,1000);
  $('sign-in').addEventListener('submit',async function(e){
   e.preventDefault();
   var email=$('email').value.trim();if(!email)return;
-  msg('Sending your secure link…');
-  var r=await api.auth.signInWithOtp({email:email,options:{emailRedirectTo:new URL('account/',cloud.root).href,shouldCreateUser:true}});
-  msg(r.error?'Sign-in email failed: '+r.error.message:'Check your email for the sign-in link.');
+  if(secondsUntilRetry()){msg('Please wait before sending another link. Check your inbox and spam folder first.');return;}
+  try{localStorage.setItem(otpCooldownKey,String(Date.now()));}catch(e){}
+  refreshOtpButton();
+  msg('Requesting one secure sign-in link… Please do not keep pressing the button.');
+  try{
+    var r=await api.auth.signInWithOtp({email:email,options:{emailRedirectTo:new URL('account/',cloud.root).href,shouldCreateUser:true}});
+    if(r.error){
+      var rateLimited=r.error.status===429||/email rate limit|over_email_send_rate_limit/i.test(r.error.message||'');
+      msg(rateLimited
+        ? 'Supabase has reached its project-wide email sending limit. Do not keep retrying. Wait about an hour, then try once, or ask the site owner to configure custom SMTP in Supabase Auth.'
+        : 'Sign-in email failed: '+r.error.message);
+    }else{
+      msg('Request received. Check your email (including spam) and use the newest link once. Do not repeatedly request new links.');
+    }
+  }catch(err){msg('Unable to request a sign-in link: '+err.message);}
  });
  $('sign-out').addEventListener('click',async function(){
   if(!confirm('Sign out from this browser? Your cloud progress will remain in your account.'))return;
