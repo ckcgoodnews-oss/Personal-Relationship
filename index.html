@@ -10,6 +10,7 @@
 <script src="shared/config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="shared/study-cloud.js"></script>
+<script src="shared/auxiliary-qa.js"></script>
 <script>(function () {
   'use strict';
   const resources = {
@@ -86,6 +87,7 @@
       <h3><span>1</span> Pray — 1 minute</h3><div class="callout">Ask Jehovah to help you understand his thoughts and feelings and apply what you learn.</div>
       <h3><span>2</span> Read & research — 4 minutes</h3><div class="reading"><div class="reading-card"><div class="eyebrow">New World Translation · Study Edition</div><strong>${escapeHTML(d[2])}</strong>${external(bible(d), 'Open Bible chapter')}</div><div class="reading-card research"><div class="eyebrow">Watchtower Online Library</div><strong>${escapeHTML(resource.title)}</strong><p>${escapeHTML(d[6])}</p>${external(resource.url, 'Read assigned material')}</div></div>
       <h3><span>3</span> Meditate — 3 minutes</h3><div class="callout">${escapeHTML(d[7])}</div>
+      ${window.StudyAuxiliary?.render('friendship',selected)||''}
       <h3><span>4</span> Apply & pray — 2 minutes</h3><div class="callout">${escapeHTML(d[8])}</div>
       <div class="actions"><button type="button" class="btn ${state.completed[selected]?'light':'primary'}" data-action="complete">${state.completed[selected]?'✓ Completed — undo':'✓ Mark day complete'}</button><button type="button" class="btn" data-action="print">Print</button></div>
       <section class="journal"><h3><span>✎</span> My personal study journal</h3><p class="small">Notes save automatically in this browser. They are private to this device and do not sync across devices. Export your journal for backup.</p><label for="quality">What did I learn about Jehovah?</label><textarea id="quality" data-note="quality" placeholder="Jehovah is…"></textarea><label for="meaning">Why is that important to me personally?</label><textarea id="meaning" data-note="meaning" placeholder="This strengthens our friendship because…"></textarea><label for="actionNote">What will I put into practice?</label><textarea id="actionNote" data-note="action" placeholder="Today I will…"></textarea><label for="prayerNote">What will I express to Jehovah in prayer?</label><textarea id="prayerNote" data-note="prayer" placeholder="Jehovah, thank you for…"></textarea><p id="save-status" class="small" role="status">Changes are saved as you type.</p></section>
