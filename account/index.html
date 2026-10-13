@@ -38,10 +38,27 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
 <label for="login-password">Password</label><input type="password" id="login-password" autocomplete="current-password" minlength="12" placeholder="Your password" required>
 <button type="submit">Sign in</button></form>
 <p id="signin-options" class="sub hidden"><button type="button" id="toggle-magic" class="secondary">Sign in using an email link instead</button></p>
+<p id="recovery-toggle-row" class="sub"><button type="button" id="show-admin-recovery" class="secondary">Locked out? Reset Admin password</button></p>
 <form id="sign-in" class="hidden"><label for="email">Email</label><input type="email" id="email" autocomplete="email" placeholder="your@email.com" required>
 <button type="submit">Email me a sign-in link</button></form><p class="sub" id="email-tip">Email sign-in is subject to a shared Supabase sending limit. If you see “Email rate limit exceeded,” avoid repeated requests and try again after the limit resets. Signed-in sessions still work normally.</p>
 <div id="signed-in" class="row hidden"><b id="signed-email"></b><button type="button" id="sign-out" class="secondary">Sign out</button></div>
 <p class="status" id="status" role="status" aria-live="polite"></p><p><button id="change-own-password" class="secondary hidden" type="button">Change my password</button></p><p id="admin-link" class="hidden"><a class="button" href="../admin/">Open administrator dashboard →</a></p></section>
+<section class="card hidden" id="admin-recovery-section" aria-labelledby="admin-recovery-title">
+<h2 id="admin-recovery-title">Reset Admin password</h2>
+<p class="sub">This recovery option requires access to the owner-controlled Supabase SQL Editor. It does not send an email, and it cannot be used by simply knowing the Admin email address.</p>
+<p class="sub"><strong>Step 1:</strong> Open the <a href="https://supabase.com/dashboard/project/lyuyzfmfcsbjeizgmgvp/sql/new" target="_blank" rel="noopener noreferrer">Supabase SQL Editor</a>. Run the following command there and copy the resulting recovery code. It expires after 15 minutes and can be used only once.</p>
+<div class="row" style="background:#edf5f0;border:1px solid #c8dfd0;padding:11px;border-radius:9px;margin-bottom:13px">
+<code id="recovery-sql">select study_private.issue_admin_password_recovery();</code>
+<button type="button" class="secondary" id="copy-recovery-sql">Copy SQL</button></div>
+<p class="sub"><strong>Step 2:</strong> Paste the code below and choose your own strong, permanent Admin password. Never share the code or password in a chat or public repository.</p>
+<form id="admin-recovery-form" autocomplete="off">
+<label for="admin-recovery-code">Recovery code</label><input id="admin-recovery-code" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="64" minlength="64" placeholder="Paste the 64-character code" required>
+<label for="admin-new-password">New Admin password</label><input id="admin-new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="At least 12 characters" required>
+<label for="admin-confirm-password">Confirm new password</label><input id="admin-confirm-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="Type the new password again" required>
+<button type="submit" id="admin-recovery-submit">Set Admin password</button>
+</form>
+<p class="status" id="admin-recovery-status" role="status" aria-live="polite"></p>
+</section>
 <section class="card hidden" id="password-section"><div class="row"><h2 id="password-heading">Set your password</h2><span class="sub" id="password-required"></span></div>
 <p class="sub" id="password-instructions">Use a private password containing at least 12 characters, letters, a number, and a symbol. Admin-generated temporary passwords must be changed before using study progress.</p>
 <form id="password-change-form" autocomplete="off"><label for="new-password">New password</label><input id="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required placeholder="At least 12 characters">
@@ -120,6 +137,51 @@ footer{text-align:center;color:#5c756a;font-size:.82rem;padding:15px 18px 30px}
   $('progress-message').textContent='Your progress is saved privately in Supabase and available on your devices.';
   cards(counts);
  }
+
+ $('show-admin-recovery').addEventListener('click',function(){
+   var section=$('admin-recovery-section');
+   var opening=section.classList.contains('hidden');
+   section.classList.toggle('hidden',!opening);
+   this.textContent=opening?'Hide Admin password recovery':'Locked out? Reset Admin password';
+   if(opening)section.scrollIntoView({behavior:'smooth',block:'start'});
+ });
+ $('copy-recovery-sql').addEventListener('click',async function(){
+   try{await navigator.clipboard.writeText($('recovery-sql').textContent);$('admin-recovery-status').textContent='SQL command copied. Run it in the Supabase SQL Editor and copy the returned recovery code.';}
+   catch(err){$('admin-recovery-status').textContent='Select and copy the SQL command manually.';}
+ });
+ $('admin-recovery-form').addEventListener('submit',async function(e){
+   e.preventDefault();
+   var status=$('admin-recovery-status');
+   var code=$('admin-recovery-code').value.trim().toLowerCase();
+   var password=$('admin-new-password').value;
+   var repeat=$('admin-confirm-password').value;
+   if(!/^[a-f0-9]{64}$/.test(code)){status.textContent='Paste the complete 64-character code from the Supabase SQL Editor.';return;}
+   if(password!==repeat){status.textContent='The two passwords do not match.';return;}
+   if(password.length<12||password.length>128||!/[a-z]/.test(password)||!/[A-Z]/.test(password)||!/[0-9]/.test(password)||!/[^a-zA-Z0-9]/.test(password)){
+      status.textContent='Use 12–128 characters containing uppercase, lowercase, a number and a symbol.';return;
+   }
+   var button=$('admin-recovery-submit');
+   button.disabled=true;status.textContent='Validating the one-time recovery code…';
+   try{
+     var response=await api.functions.invoke('study-admin-recovery',{body:{recovery_code:code,new_password:password}});
+     if(response.error||!response.data||!response.data.success){
+       var message=response.data&&response.data.message||response.error&&response.error.message||'Recovery failed';
+       if(response.error&&response.error.context&&response.error.context.json){
+         try{var data=await response.error.context.json();message=data.message||message;}catch(ignored){}
+       }
+       status.textContent='Password not changed: '+message+'. If the code expired, generate another one in the Supabase SQL Editor.';
+       return;
+     }
+     $('admin-recovery-code').value='';
+     $('admin-new-password').value='';
+     $('admin-confirm-password').value='';
+     status.textContent='Your Admin password has been updated. Sign in above with ckc.good.news@gmail.com and your new password.';
+     $('login-email').value='ckc.good.news@gmail.com';
+     $('password-signin').classList.remove('hidden');
+     $('sign-in').classList.add('hidden');
+   }catch(error){status.textContent='Recovery request failed: '+error.message;}
+   finally{button.disabled=false;}
+ });
  $('toggle-magic').addEventListener('click',function(){
     var show=$('sign-in').classList.contains('hidden');
     $('sign-in').classList.toggle('hidden',!show);
