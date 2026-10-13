@@ -42,7 +42,7 @@ const css='<style>'+
 
 function thinkingCue(question,index){
   const q=String(question).toLowerCase();
-  if(index===1||q.includes('could someone')||q.includes('could a ')||q.includes('how can')||q.includes('what would')){
+  if(q.includes('could someone')||q.includes('could a ')||q.includes('what would')||q.includes('what action')||q.includes('what step')||q.includes('how could')||q.includes('how can')||q.includes('apply')||q.includes('next time')){
     return 'Apply: Think of one realistic situation. Which Bible principle guides the next step?';
   }
   if(q.startsWith('why')||q.startsWith('how')){
@@ -61,7 +61,7 @@ function inferenceMarkup(question,answer,index){
     '<div class="aux-reasoning"><strong>Think first:</strong> '+escapeHTML(thinkingCue(question,index))+
     '<div class="aux-help">Say your answer aloud or write it down before opening the arrow.</div></div>'+
     '<details class="aux-reveal"><summary><span class="aux-chevron" aria-hidden="true">▸</span>'+
-    '<span><span class="aux-label-hidden">▼ Tap to reveal suggested answer</span>'+
+    '<span><span class="aux-label-hidden">Tap to reveal suggested answer</span>'+
     '<span class="aux-label-shown">Answer shown — tap to hide</span></span></summary>'+
     '<div class="aux-answer"><strong>Suggested answer:</strong> '+escapeHTML(answer)+
     '<span class="aux-check"><strong>Check your reasoning:</strong> Which words or principle in the cited Bible passage support this answer?</span></div></details></section>';
@@ -74,7 +74,7 @@ function render(study,id){
     '<p class="aux-intro">1. Read the Scripture. 2. Think through each inference. 3. Tap the large green arrow to check your answer. <strong>The answers stay hidden until you choose to reveal them.</strong></p>'+
     inferenceMarkup(q1,a1,0)+inferenceMarkup(q2,a2,1)+
     '<details class="aux-main"><summary><span class="aux-chevron" aria-hidden="true">▸</span>'+
-    '<span>▼ Reveal the main teaching point (after both questions)</span></summary>'+
+    '<span>Reveal the main teaching point (after both questions)</span></summary>'+
     '<div class="aux-answer"><strong>Main point:</strong> '+escapeHTML(point)+'</div></details></section>';
 }
 window.StudyAuxiliary={
